@@ -34,7 +34,7 @@ None of the models are homoscedastic, all having significant residual variation,
 
 <br>
 
-![Scatter plot of Residuals and Predicted Values](images/Flight_Delay_Predictions_Pic6.png)<br>
+![Scatter plot of Residuals and Predicted Values](images/Flight_Delay_Predictions_Pic7.png)<br>
 When we look at the variation of residuals and predicted values for LightGBM, there is and increased error for very large values.  Therefore, I believe that due to the high variance and low sample size of values in the upper tail, the gradient boosting models aren't splitting this part of the data by departure delay leading to worse performance.<br>
 
 <br>
