@@ -1,58 +1,60 @@
 ﻿# Flight-Delay-Project
+
+This is a python-based project to predict the flight delays of US domestic flights.  It uses historical data from: www.kaggle.com/datasets/usdot/flight-delays.
 ***
-This is a python-based project to predict the flight delays of US domestic flights.  It is using historical data from 2015 from (https://www.kaggle.com/datasets/usdot/flight-delays?select=flights.csv).
+## Project Structure:
+Data_Cleaning.ipynb - Loads and cleans the data, removes heterogeneous identifiers, and reconstructs timestamps.
 
-## Overview and Structure:
+Exploratory_Data_Analysis.ipynb - Visualises data, and uses statistical methods to explore relationships and variations in the data.
 
-This project is contained within 3 Jupyter Notebooks, each one exemplifying a different subset of skills.  The notebooks are:
-- Data_Cleaning.ipynb
-- Exploratory_Data_Analysis.ipynb
-- Flight_Predictions.ipynb
+Flight_Predictions.ipynb - Optimises and evaluates multiple models to predict the "arrival delay" of flights utilising findings from my EDA.
 
-The 1st notebook, Data_Cleaning, is focused on 2 main problems.  First, the identifiers for the airports are heterogeneous, having both the standard IATA codes as well as anonymous 5-digit codes.  I resolved the problem by finding what the 5-digit codes are (internal codes for the US Government), and then used string methods, regular expressions, and data engineering to match and replace the 5-digit codes.  Second, the time columns were in varying time zones, and formats.  I performed timestamp reconstruction and applied feature engineering to standardise the columns into a machine-readable datetime format whilst maintaining much useful information as possible for downstream machine learning.
+## Findings and Results
+![EDA of Target Variable (Arrival Delay)](images/Flight_Delay_Predictions_Pic5.png) <br>
+In my EDA, I found that features related to time often had discrete effects on the arrival delay so I treated them as categorical, rather than numerical, features in my predictions.  I also found that combinations of categorical features (such as airline and origin airport) explained a significant amount of the variation in arrival delay.
 
-The 2nd notebook, Exploratory_Data_Analysis, examines the data that was cleaned in Data_Cleaning.  Through the incorporation of data visualisation, using Matplotlib and Seaborn (on top of statistical methods) I was able to identify relationships and variations within the data.  I incorporated a variety of Dataframes and groupings to uncover key patterns in the data.  This notebook uncovered and elucidated key variations in the data that would inform my Feature Engineering including whether particular numerical features would be treated as categorical or continuous.
+To Predict the arrival delay of flights:
+- I used LinearRegression, due to the linear relationship between the embedded feature, "departure delay", and arrival delay.
 
-In order to handle large amounts of categorical data, the 3rd notebook, Flight_Predictions, uses several Linear Regression and Gradient Boost models to predict the arrival delay of flights: LinearRegression and ElasticNet from Scikit-learn, along with XGBRegressor, LGBMRegressor, and CatBoostRegressor.  I created several derivate features to try and explain variations in the data found in Exploratory_Data_analysis.  The notebook includes descriptions of how the models work as well as feature analysis and the use of a meta-model to incorporate the different patterns found both by Linear Regression and Gradient Boost.
+However, due to my EDA, I hypothesised that complex relationships between the categorical features would help to explain the variation in arrival delay so I utilised 3 Gradient Boosting models as well:
 
-## Skills Demonstrated in Each Notebook:
+- XGBoost as a baseline.
+- LightGBM, due to its deep assymetrical trees, to better capture complicated feature interactions.
+- CatBoost, which only performs one split per level, in case large consistent patterns in the data best explained the variation.<br>
 
-**Data_Cleaning.ipynb**
-- Data Engineering
-- String Manipulation
-- Dealing with Missing Values
-- Data Standardisation
-- Dataset Reconcilisation
+<br>
 
-**Exploratory_Data_Analysis.ipynb**
-- Data Visualisation
-- Statistical Analysis
-- Reshaping Data
-- Data Analysis
-- Feature Interaction Analysis
+![Table Comparison of ML Models](images/Flight_Delay_Predictions_Pic4.png) <br>
+LightGBM, as expected, was the best performing model, although with slight overfitting.  Whilst all the models explained a huge amount of variation of arrival delay (which has a standard deviation of 39) this is unfairly high due to the embedded feature departure delay.  By mean absolute error, XGBoost was the 2nd best, although it was the worst when evaluating using root mean squared error.  This is because of the model having a high variance for very large arrival delays as we can see in the next image.<br>
 
-**Flight_Predictions.ipynb**
-- Feature Engineering
-- Sparse Data
-- Data Normalisation
-- An Understanding of how various Machine Learning Algorithms Work
-- Machine Learning Optimisation
-- Feature Importance Analysis
+<br>
 
+![Comparison by Percentile of Models](images/Flight_Delay_Predictions_Pic2.png) <br>
+None of the models are homoscedastic, all having significant residual variation, especially for the 99th percentile of predicted values.  LinearRegression was the worst performing model because of its inability to capture the relationships between features and LightGBM was the best performing gradient boosting model for every percentile.  The variation between XGBoost's MAE and RMSE is explained by its disproportionately high residual error for large values.  However, LinearRegression's stronger performance in the 99th percentile shows that the gradient boosting models aren't effectively splitting the departure delay feature for very large values.<br>
 
-## Libraries Used:
-- Pandas
-- NumPy
-- Scikit-Learn
-- XGBoost
-- LightGBM
-- CatBoost
-- Matplotlib
-- Seaborn
-- Scipy
+<br>
 
-## How to Run the Application:
-- Clone this repository.
-- Make sure you have the correct packages installed.
-- Unzip any zipped files.
-- Open each Jupyter Notebook and run the cells in order.
+![Scatter plot of Residuals and Predicted Values](images/Flight_Delay_Predictions_Pic6.png)<br>
+When we look at the variation of residuals and predicted values for LightGBM, there is and increased error for very large values.  Therefore, I believe that due to the high variance and low sample size of values in the upper tail, the gradient boosting models aren't splitting this part of the data by departure delay leading to worse performance.<br>
+
+<br>
+
+![Model Error Analysis](images/Flight_Delay_Predictions_Pic3.png)<br>
+In my model error analysis, there wasn't a clear pattern between the airline and the amount of variation that the models explained.  The 2 airlines with the lowest proportion of their variation explained, Alaska and Hawaiian, also had the lowest overall variation.  This suggests that a larger proportion of their variation (and therefore the variation present in the graph) is due to noise.  We can also see that for the 2 best performing models, LightGBM and CatBoost, there isn't significant variation, between their performances, by airline.
+
+Overall, LightGBM was the best performing model, even though it is less effective at predicting very large delays than LinearRegression.  Future work can be done to predict the arrival delay without relying on embedded features.
+
+## Installation
+```
+git clone www.github.com/Samuel-Kelly-hub/Flight-Delay-Project
+cd Flight-Delay-Project
+pip install -r requirements.txt
+```
+## How to Run Notebooks
+```
+jupyter notebook
+```
+Run the notebooks in the following order:
+1. `Data_Cleaning.ipynb`
+2. `Exploratory_Data_Analysis.ipynb`
+3. `Flight_Predictions.ipynb`
